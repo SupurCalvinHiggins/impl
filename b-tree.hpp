@@ -7,6 +7,9 @@
 
 #define B 4
 
+// invariants: besides root, the numbers of keys in node
+// is between B/2 - 1 and B-1
+
 class BTree {
 
 public:
@@ -98,6 +101,7 @@ private:
             // And insert the new key.
             root->keys.at(i) = key;
             ++(root->size);
+            ++m_size;
 
             // Return if the node is full.
             return root->size == B;
@@ -116,6 +120,146 @@ private:
         bool full = insert(root->children.at(i), key);
         if (!full) return false;
         return split(root, i);
+    }
+
+    bool remove(Node* root, key_type key) {
+        // Otherwise, find the child to recurse on.
+        size_type i = 0;
+        while (i < root->size && root->keys.at(i) < key) ++i;
+        
+        // If the key already exists.
+        if (i < root->size && root->keys.at(i) == key) {
+            // Remove it if it's in a leaf.
+            if (root->children[0] == nullptr) {
+                for (size_type j = i; j < root->size; ++j) {
+                    root->keys[j] = root->keys[j+1];
+                }
+                root->keys[root->size-1] = 0;
+                --(root->size);
+                --m_size;
+                return root->size < (B/2 - 1);
+            }
+
+            // Otherwise, swap with its succ.
+            auto node = root->children[i+1];
+            while (node->children[0] != nullptr) {
+                node = node->children[0];
+            }
+            std::swap(node->keys[0], key);
+        } else {
+            // The key does not exist.
+            if (root->children[0] == nullptr) {
+                return false;
+            }
+            
+        }
+        // search and recurse
+        bool empty = remove(root->children[i], key);
+        if (!empty) return false;
+
+        // if can take from sibling nodes to fill, do it.
+        if (i > 0 && root->children[i-1]->size > (B/2 - 1)) {
+            std::cout << "left" << std::endl;
+            // Shift over.
+            root->children[i]->children[root->children[i]->size+1] = root->children[i]->children[root->children[i]->size];
+            for (size_type j = root->children[i]->size; j > 0; --j) {
+                root->children[i]->keys[j] = root->children[i]->keys[j-1];
+                root->children[i]->children[j] = root->children[i]->children[j-1];
+            }
+
+            // Move down.
+            root->children[i]->keys[0] = root->keys[i];
+            ++(root->children[i]->size);
+
+            // Move up.
+            root->keys[i] = root->children[i-1]->keys[root->children[i-1]->size-1];
+            root->children[i-1]->keys[root->children[i-1]->size-1] = 0;
+            --(root->children[i-1]->size);
+
+            return false;
+
+        } else if (i < root->size && root->children[i+1]->size > (B/2 - 1)) {
+            std::cout << "right " << root->children[i+1]->size << std::endl;
+            // Move down.
+            root->children[i]->keys[root->children[i]->size] = root->keys[i];
+            ++(root->children[i]->size);
+
+            // Move up.
+            root->keys[i] = root->children[i+1]->keys[0];
+
+            // Shift over.
+            for (size_type j = 1; j < root->children[i+1]->size; ++j) {
+                root->children[i+1]->keys[j-1] = root->children[i+1]->keys[j];
+                root->children[i+1]->children[j-1] = root->children[i+1]->children[j];
+            }
+            root->children[i+1]->children[root->children[i+1]->size-1] = root->children[i+1]->children[root->children[i+1]->size];
+            root->children[i+1]->keys[root->children[i+1]->size-1] = 0;
+            root->children[i+1]->children[root->children[i+1]->size] = nullptr;
+            --(root->children[i+1]->size);
+
+            return false;
+        }
+
+        std::cout << "merge" << std::endl;
+        // if cant take from siblings to fill, merge them (i) and (i+1) unless i is max in which case its i-1
+        size_type l, r;
+        if (i == root->size) {
+            l = i-1;
+            r = i;
+        } else {
+            l = i;
+            r = i+1;
+        }
+
+        // build merged node
+        auto merged = new Node();
+        for (size_type j = 0; j < root->children[l]->size; ++j) {
+            merged->keys[j] = root->children[l]->keys[j];
+            merged->children[j] = root->children[l]->children[j];
+        }
+        merged->keys[root->children[l]->size] = root->keys[l];
+        merged->children[root->children[l]->size] = root->children[l]->children[root->children[l]->size];
+        merged->size = root->children[l]->size+1;
+
+        for(size_type j = 0; j < root->children[r]->size; ++j) {
+            merged->keys[j+merged->size] = root->children[r]->keys[j];
+            merged->children[j+merged->size] = root->children[r]->children[j];
+        }
+        merged->children[root->children[r]->size + merged->size] = root->children[r]->children[root->children[r]->size];
+        merged->size += root->children[r]->size;
+        
+        // free memory
+        delete root->children[i];
+        delete root->children[i+1];
+
+        // insert merged node into parent
+        for (size_type j = i; j < root->size; ++j) {
+            root->keys[j] = root->keys[j+1];
+            root->children[j] = root->children[j+1];
+        }
+        root->children[root->size-1] = root->children[root->size];
+        root->keys[root->size-1] = 0;
+        root->children[root->size] = nullptr;
+        --(root->size);
+
+        // link in the merged node
+        // TODO: instead of this, copy merged into the current root here.
+        if (root->size == 0 && root == m_root) {
+            m_root = merged;
+            return false;
+        }
+        // if (root->size == 0) {
+        //     root->size = merged->size;
+        //     root->children = merged->children;
+        //     root->keys = merged->keys;
+        //     delete merged;
+        //     return false;
+        // }
+
+        root->children[i] = merged;
+        print(m_root, 0);
+        std::cout << "end merge" << std::endl;
+        return root->size < (B/2 - 1);
     }
 
     bool contains(Node* root, key_type key) {
@@ -145,7 +289,13 @@ public:
     }
 
     void remove(key_type key) {
+        remove(m_root, key);
+        // cases:
+        // if not leaf -> put in leaf by switching with successor
+        // remove from leaf -> merge with sibling if too small
 
+        // to fixup try to pull keys from siblings to maintain >= b/2-1
+        // if not possible, merge the nodes together (this impacts parent)
     }
 
     bool contains(key_type key) {
@@ -156,7 +306,30 @@ public:
         return m_size;
     }
 
-    bool empty() {
-        return size() == 0;
+    void print() { 
+        std::cout << "*** TREE ***" << std::endl;
+        print(m_root, 0);
+        std::cout << "*** END TREE ***" << std::endl;
+        std::cout << std::endl;
+    }
+private:
+    void print(Node* root, int depth) {
+        if (root == nullptr) return;
+        for (int j = 0; j < root->size; ++j) {
+            print(root->children[j], depth+1);
+            for (int i = 0; i < depth; ++i) {
+                std::cout << "\t";
+            }
+            std::cout << root->keys[j] << std::endl;
+
+            for (int i = root->size; i < B; ++i) {
+                assert(root->keys[i] == 0);
+            }
+
+            for (int i = root->size+1; i < B+1; ++i) {
+                assert(root->children[B] == nullptr);
+            }
+        }
+        print(root->children[root->size], depth+1);
     }
 };
