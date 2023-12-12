@@ -172,7 +172,90 @@ private:
                     children[1] = r;
                 }
             } else {
-                
+                if (children[0]->size == 1 || children[1]->size == 1 || children[2]->size == 1) {
+                    Node *a, *b, *c, *d;
+                    key_type x, y, z;
+                    auto l = children[0];
+                    auto m = children[1];
+                    auto r = children[2];
+                    if (children[0]->size == 0) {
+                        a = l->children[0];
+                        b = m->children[0];
+                        c = m->children[1];
+                        d = r;
+                        x = keys[0];
+                        z = keys[1];
+                        y = children[1]->keys[0];
+                    } else if (children[1]->size == 0) {
+                        a = l->children[0];
+                        b = l->children[1];
+                        c = m->children[0];
+                        d = r;
+                        x = l->keys[1];
+                        y = keys[0];
+                        z = keys[1]
+                    } else {
+                        a = l;
+                        b = m->children[0];
+                        c = m->children[1];
+                        d = r->children[0];
+                        x = keys[0];
+                        y = m->keys[0];
+                        z = keys[1];
+
+                        children[0] = l;
+                        children[1] = r;
+                        keys[0] = x;
+                        size = 1;
+
+                        r->children[0] = a;
+                        r->children[1] = b;
+                        r->children[2] = c;
+                        r->keys[1] = y;
+                        r->keys[2] = z;
+                        r->size = 2;
+
+                        return;
+                    }
+
+                    children[0] = l;
+                    children[1] = r;
+                    keys[0] = z;
+                    size = 1;
+
+                    l->children[0] = a;
+                    l->children[1] = b;
+                    l->children[2] = c;
+                    l->keys[0] = x;
+                    l->keys[1] = y;
+                    l->size = 2;
+
+                    delete m;
+                } else {
+                    Node *a, *b, *c, *d, *e;
+                    key_type x, y, w, z;
+                    auto l = children[0];
+                    auto m = children[1];
+                    auto r = children[2];
+
+                    if (l->size == 0) {
+                        a = l->children[0];
+                        b = m->children[1];
+                        c = m->children[2];
+                        d = m->children[3];
+                        e = r;
+
+                        w = keys[0];
+                        z = keys[1];
+                        x = m->keys[0];
+                        y = m->keys[1];
+                    } else if (m->size == 0) {
+                        
+                    } else {
+
+                        return;
+                    }
+                }
             }
         }
     };
