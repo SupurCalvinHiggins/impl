@@ -235,8 +235,9 @@ REGISTER_TYPED_TEST_SUITE_P(OrderedSetTest,
     // RemoveInc
 );
 
-#include "b-tree.hpp"
-#include "2-3-tree.hpp"
+// #include "b-tree.hpp"
+// #include "2-3-tree.hpp"
+#include "avl-tree.hpp"
 
-typedef testing::Types<TwoThreeTree> OrderedSetImplementations;
+typedef testing::Types<AVLTree> OrderedSetImplementations;
 INSTANTIATE_TYPED_TEST_SUITE_P(OrderedSetTestSuite, OrderedSetTest, OrderedSetImplementations);
