@@ -33,7 +33,7 @@ TYPED_TEST_P(OrderedSetTest, InsertInc) {
         }
         
         for (key_type j = i+1; j < size; ++j) {
-            ASSERT_FALSE(this->m_set->contains(j));
+            ASSERT_FALSE(this->m_set->contains(j)); 
         }
 
         ASSERT_EQ(this->m_set->size(), i + 1);
@@ -117,38 +117,38 @@ TYPED_TEST_P(OrderedSetTest, InsertDbl) {
     ASSERT_EQ(this->m_set->size(), 1);
 }
 
-// TYPED_TEST_P(OrderedSetTest, RemoveInc) {
-//     using key_type = typename TypeParam::key_type;
-//     using size_type = typename TypeParam::size_type;
+TYPED_TEST_P(OrderedSetTest, RemoveInc) {
+    using key_type = typename TypeParam::key_type;
+    using size_type = typename TypeParam::size_type;
 
-//     constexpr size_type size = 16;
+    constexpr size_type size = 16;
 
-//     for (key_type i = 0; i < size; ++i) {
-//         this->m_set->insert(i);
-//     }
+    for (key_type i = 0; i < size; ++i) {
+        this->m_set->insert(i);
+    }
 
-//     for (key_type i = 0; i < size; ++i) {
-//         ASSERT_TRUE(this->m_set->contains(i));
-//     }
-//     ASSERT_EQ(this->m_set->size(), size);
+    for (key_type i = 0; i < size; ++i) {
+        ASSERT_TRUE(this->m_set->contains(i));
+    }
+    ASSERT_EQ(this->m_set->size(), size);
 
-//     this->m_set->print();
+    this->m_set->print();
 
-//     for (key_type i = 0; i < size; ++i) {
-//         this->m_set->remove(i);
-//         this->m_set->print();
+    for (key_type i = 0; i < size; ++i) {
+        this->m_set->remove(i);
+        this->m_set->print();
 
-//         for (key_type j = 0; j <= i; ++j) {
-//             ASSERT_FALSE(this->m_set->contains(j));
-//         }
+        for (key_type j = 0; j <= i; ++j) {
+            ASSERT_FALSE(this->m_set->contains(j));
+        }
         
-//         for (key_type j = i+1; j < size; ++j) {
-//             ASSERT_TRUE(this->m_set->contains(j));
-//         }
+        for (key_type j = i+1; j < size; ++j) {
+            ASSERT_TRUE(this->m_set->contains(j));
+        }
 
-//         ASSERT_EQ(this->m_set->size(), size - (i + 1));
-//     }
-// }
+        ASSERT_EQ(this->m_set->size(), size - (i + 1));
+    }
+}
 
 // TYPED_TEST_P(OrderedSetTest, InsertDec) {
 //     using key_type = typename TypeParam::key_type;
@@ -231,8 +231,8 @@ REGISTER_TYPED_TEST_SUITE_P(OrderedSetTest,
     InsertInc, 
     InsertDec,
     InsertRng, 
-    InsertDbl
-    // RemoveInc
+    InsertDbl,
+    RemoveInc
 );
 
 // #include "b-tree.hpp"

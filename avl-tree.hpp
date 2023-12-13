@@ -118,6 +118,8 @@ private:
             root->right = insert(root->right, key);
         }
 
+        root->height = 1 + std::max(height(root->left), height(root->right));
+
         // Left-heavy.
         if (height(root->left) > height(root->right) + 1) {
             if (key > root->left->key) {
@@ -143,6 +145,7 @@ private:
         }
 
         if (key == root->key) {
+            m_size--;
             if (root->left == nullptr && root->right == nullptr) {
                 delete root;
                 return nullptr;
@@ -162,7 +165,7 @@ private:
                 while (succ->left != nullptr) {
                     succ = succ->left;
                 }
-                std::swap(succ->key, root->key)
+                std::swap(succ->key, root->key);
                 root->right = remove(root->right, key);
             }            
         }
@@ -175,7 +178,7 @@ private:
 
         // Left-heavy.
         if (height(root->left) > height(root->right) + 1) {
-            if (key > root->left->key) {
+            if (key < root->left->key) {
                 root->left = rotate_left(root->left);
             }
             return rotate_right(root);
@@ -183,13 +186,13 @@ private:
 
         // Right-heavy.
         if (height(root->right) > height(root->left) + 1) {
-            if (key < root->right->key) {
+            if (key > root->right->key) {
                 root->right = rotate_right(root->right);
             }
             return rotate_left(root);
         }
 
-        return nullptr;
+        return root;
     }
 
     void print(node_ptr root, size_type depth) {
