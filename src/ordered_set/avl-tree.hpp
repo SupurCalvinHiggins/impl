@@ -145,17 +145,19 @@ private:
         }
 
         if (key == root->key) {
-            m_size--;
             if (root->left == nullptr && root->right == nullptr) {
+                m_size--;
                 delete root;
                 return nullptr;
             }
             else if (root->left == nullptr) {
+                m_size--;
                 auto right = root->right;
                 delete root;
                 root = right;
             }
             else if (root->right == nullptr) {
+                m_size--;
                 auto left = root->left;
                 delete root;
                 root = left;
@@ -176,17 +178,17 @@ private:
             root->right = remove(root->right, key);
         }
 
-        // Left-heavy.
+        // Left-heavy. Remove in right.
         if (height(root->left) > height(root->right) + 1) {
-            if (key < root->left->key) {
+            if (height(root->right) > height(root->left) + 1) {
                 root->left = rotate_left(root->left);
             }
             return rotate_right(root);
         }
 
-        // Right-heavy.
+        // Right-heavy. Remove in left.
         if (height(root->right) > height(root->left) + 1) {
-            if (key > root->right->key) {
+            if (height(root->left) > height(root->right) + 1) {
                 root->right = rotate_right(root->right);
             }
             return rotate_left(root);
