@@ -29,20 +29,51 @@ private:
         return root != nullptr ? root->height : 0;
     }
 
-    // node_ptr predecessor(node_ptr root, key_type key) const {
-    //     if (root == nullptr || root->left == nullptr) {
-    //         return nullptr;
-    //     }
+    node_ptr predecessor(node_ptr root, key_type key) const {
+        if (root == nullptr) {
+            return nullptr;
+        }
 
-    //     auto pred = root->left;
-    //     while(pred->left != nullptr) {
-    //         pred = pred->right;
-    //     }
-    // }
+        if (key == root->key && root->left != nullptr) {
+            auto pred = root->left;
+            while (pred->right != nullptr) {
+                pred = pred->right;
+            }
+            return pred;
+        }
 
-    // node_ptr successor(node_ptr root, key_type key) const {
+        if (key <= root->key) {
+            return predecessor(root->left, key);
+        }
 
-    // }
+        auto pred = predecessor(root->right, key);
+        return pred == nullptr || root->key > pred->key ? root : pred;
+    }
+
+    node_ptr successor(node_ptr root, key_type key) const {
+        // if node and node.right exists, its the leftmost in right subtree
+        // if node and node.right dne, its the smallest bigger parent
+        // ^ maybe otherwise and not that
+
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        if (key == root->key && root->right != nullptr) {
+            auto succ = root->right;
+            while (succ->left != nullptr) {
+                succ = succ->left;
+            }
+            return succ;
+        }
+
+        if (key >= root->key) {
+            return successor(root->right, key);
+        }
+
+        auto succ = successor(root->left, key);
+        return succ == nullptr || root->key < succ->key ? root : succ;
+    }
 
     bool contains(node_ptr root, key_type key) const {
         if (root == nullptr) {
@@ -63,8 +94,6 @@ private:
     node_ptr rotate_right(node_ptr root) {
         assert(root != nullptr);
         assert(root->left != nullptr);
-        // std::cout << "*** RIGHT ***" << std::endl;
-        // print(root, 0);
         auto x = root->left;
         auto y = root;
         auto a = root->left->left;
@@ -76,16 +105,12 @@ private:
         x->left = a;
         x->right = y;
         x->height = 1 + std::max(height(a), height(y));
-        // print(x, 0);
-        // std::cout << "*** END RIGHT ***" << std::endl;
         return x;
     }
 
     node_ptr rotate_left(node_ptr root) {
         assert(root != nullptr);
         assert(root->right != nullptr);
-        // std::cout << "*** LEFT ***" << std::endl;
-        // print(root, 0);
         auto x = root->right;
         auto y = root;
         auto a = root->left;
@@ -97,8 +122,6 @@ private:
         x->left = y;
         x->right = c;
         x->height = 1 + std::max(height(y), height(c));
-        // print(x, 0);
-        // std::cout << "*** END LEFT ***" << std::endl; 
         return x;
     }
 
@@ -217,24 +240,24 @@ private:
 public:
     AVLTree() : m_root(nullptr), m_size(0) {}
 
-    // std::optional<key_type> predecessor(key_type key) {
-    //     auto pred = predecessor(m_root, key);
-    //     if (pred == nullptr) {
-    //         return std::nullopt;
-    //     }
-    //     return std::make_optional(pred->key);
-    // }
-
-    // std::optional<key_type> successor(key_type key) {
-    //     auto succ = successor(m_root, key);
-    //     if (succ == nullptr) {
-    //         return std::nullopt;
-    //     }
-    //     return std::make_optional(succ->key);
-    // }
-
     bool contains(key_type key) const {
         return contains(m_root, key);
+    }
+
+    std::optional<key_type> predecessor(key_type key) {
+        auto pred = predecessor(m_root, key);
+        if (pred == nullptr) {
+            return std::nullopt;
+        }
+        return std::make_optional(pred->key);
+    }
+
+    std::optional<key_type> successor(key_type key) {
+        auto succ = successor(m_root, key);
+        if (succ == nullptr) {
+            return std::nullopt;
+        }
+        return std::make_optional(succ->key);
     }
 
     size_type size() const {

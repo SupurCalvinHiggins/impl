@@ -33,8 +33,8 @@ protected:
             ASSERT_EQ(stl_set.size(), set.size());
             for (const auto key : keys) {
                 ASSERT_EQ(stl_set.contains(key), set.contains(key));
-                // ASSERT_EQ(stl_set.predecessor(key), set.predecessor(key));
-                // ASSERT_EQ(stl_set.successor(key), set.successor(key));
+                ASSERT_EQ(stl_set.predecessor(key), set.predecessor(key));
+                ASSERT_EQ(stl_set.successor(key), set.successor(key));
             }
 
             if (i >= ops.size()) {
@@ -188,9 +188,32 @@ TYPED_TEST_P(OrderedSetTest, RemoveDbl) {
     this->check(ops, keys);
 }
 
+TYPED_TEST_P(OrderedSetTest, InsertRemoveRng) {
+    using key_type = typename TypeParam::key_type;
+    using size_type = typename TypeParam::size_type;
+
+    std::mt19937 rng;
+    std::uniform_int_distribution<key_type> dist(
+        0,
+        static_cast<size_type>(std::sqrt(this->size))
+    );
+
+    std::vector<key_type> keys;
+    std::vector<Op> ops;
+    for (key_type i = 0; i < this->size; ++i) {
+        keys.push_back(dist(rng));
+        ops.push_back(Op::Insert);
+        keys.push_back(dist(rng));
+        ops.push_back(Op::Remove);
+    }
+
+    this->check(ops, keys);
+}
+
 REGISTER_TYPED_TEST_SUITE_P(OrderedSetTest,
     InsertInc, InsertDec, InsertRng, InsertDbl,
-    RemoveInc, RemoveDec, RemoveRng, RemoveDbl
+    RemoveInc, RemoveDec, RemoveRng, RemoveDbl,
+    InsertRemoveRng
 );
 
 typedef testing::Types<AVLTree> OrderedSetImplementations;
