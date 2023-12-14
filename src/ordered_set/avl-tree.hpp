@@ -25,56 +25,6 @@ private:
     node_ptr m_root;
     size_type m_size;
 
-    size_type height(const node_ptr root) const {
-        return root != nullptr ? root->height : 0;
-    }
-
-    node_ptr predecessor(node_ptr root, key_type key) const {
-        if (root == nullptr) {
-            return nullptr;
-        }
-
-        if (key == root->key && root->left != nullptr) {
-            auto pred = root->left;
-            while (pred->right != nullptr) {
-                pred = pred->right;
-            }
-            return pred;
-        }
-
-        if (key <= root->key) {
-            return predecessor(root->left, key);
-        }
-
-        auto pred = predecessor(root->right, key);
-        return pred == nullptr || root->key > pred->key ? root : pred;
-    }
-
-    node_ptr successor(node_ptr root, key_type key) const {
-        // if node and node.right exists, its the leftmost in right subtree
-        // if node and node.right dne, its the smallest bigger parent
-        // ^ maybe otherwise and not that
-
-        if (root == nullptr) {
-            return nullptr;
-        }
-
-        if (key == root->key && root->right != nullptr) {
-            auto succ = root->right;
-            while (succ->left != nullptr) {
-                succ = succ->left;
-            }
-            return succ;
-        }
-
-        if (key >= root->key) {
-            return successor(root->right, key);
-        }
-
-        auto succ = successor(root->left, key);
-        return succ == nullptr || root->key < succ->key ? root : succ;
-    }
-
     bool contains(node_ptr root, key_type key) const {
         if (root == nullptr) {
             return false;
@@ -91,71 +41,139 @@ private:
         }
     }
 
+    node_ptr predecessor(node_ptr root, key_type key) const {
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        // If the key exists and has a left subtree, the predecessor is there.
+        if (key == root->key && root->left != nullptr) {
+            auto pred = root->left;
+            while (pred->right != nullptr) {
+                pred = pred->right;
+            }
+            return pred;
+        }
+
+        // Otherwise, the predecessor is the maximum parent less than the key.
+        if (key <= root->key) {
+            return predecessor(root->left, key);
+        }
+
+        auto pred = predecessor(root->right, key);
+        return pred == nullptr || root->key > pred->key ? root : pred;
+    }
+
+    node_ptr successor(node_ptr root, key_type key) const {
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        // If the key exists and has a right subtree, the successor is there.
+        if (key == root->key && root->right != nullptr) {
+            auto succ = root->right;
+            while (succ->left != nullptr) {
+                succ = succ->left;
+            }
+            return succ;
+        }
+
+        // Otherwise, the successor is the minimum parent greater than the key.
+        if (key >= root->key) {
+            return successor(root->right, key);
+        }
+
+        auto succ = successor(root->left, key);
+        return succ == nullptr || root->key < succ->key ? root : succ;
+    }
+
     node_ptr rotate_right(node_ptr root) {
         assert(root != nullptr);
         assert(root->left != nullptr);
+
+        // Destructure.
         auto x = root->left;
         auto y = root;
         auto a = root->left->left;
         auto b = root->left->right;
         auto c = root->right;
+
+        // Rotate.
         y->left = b;
         y->right = c;
         y->height = 1 + std::max(height(b), height(c));
         x->left = a;
         x->right = y;
         x->height = 1 + std::max(height(a), height(y));
+
         return x;
     }
 
     node_ptr rotate_left(node_ptr root) {
         assert(root != nullptr);
         assert(root->right != nullptr);
+
+        // Destructure.
         auto x = root->right;
         auto y = root;
         auto a = root->left;
         auto b = root->right->left;
         auto c = root->right->right;
+
+        // Rotate.
         y->left = a;
         y->right = b;
         y->height = 1 + std::max(height(a), height(b));
         x->left = y;
         x->right = c;
         x->height = 1 + std::max(height(y), height(c));
+
         return x;
     }
 
+    size_type height(const node_ptr root) const {
+        return root != nullptr ? root->height : 0;
+    }
+
     node_ptr insert(node_ptr root, key_type key) {
+        // If the root is empty, insert the key.
         if (root == nullptr) {
             m_size++;
             return new Node(key);
         }
 
+        // Ignore double insertions.
         if (key == root->key) {
             return root;
         }
 
+        // Insert into the correct subtree.
         if (key < root->key) {
             root->left = insert(root->left, key);
         } else {
             root->right = insert(root->right, key);
         }
 
+        // The root's height might be incorrect now. Fix it.
         root->height = 1 + std::max(height(root->left), height(root->right));
 
-        // Left-heavy.
+        // If the left subtree is too high, fix it.
         if (height(root->left) > height(root->right) + 1) {
+            // If the left right subtree is too high, make the left left subtree high instead.
             if (key > root->left->key) {
                 root->left = rotate_left(root->left);
             }
+            // Fix the high left left subtree.
             return rotate_right(root);
         }
 
-        // Right-heavy.
+        // If the right subtree is high, fix it.
         if (height(root->right) > height(root->left) + 1) {
+            // If the right left subtree is too high, make the right right subtree high instead.
             if (key < root->right->key) {
                 root->right = rotate_right(root->right);
             }
+            // Fix the high right right subtree.
             return rotate_left(root);
         }
 
@@ -185,7 +203,6 @@ private:
                 delete root;
                 root = left;
             } else {
-                // TODO: Swap with successor.
                 auto succ = root->right;
                 while (succ->left != nullptr) {
                     succ = succ->left;
