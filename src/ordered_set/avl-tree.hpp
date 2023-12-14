@@ -181,56 +181,51 @@ private:
     }
  
     node_ptr remove(node_ptr root, key_type key) {
+        // Ignore double removes.
         if (root == nullptr) {
             return nullptr;
         }
 
+        // Remove the key.
         if (key == root->key) {
-            if (root->left == nullptr && root->right == nullptr) {
+            // If there are less than two children, the child is now the root.
+            if (root->left == nullptr || root->right == nullptr) {
                 m_size--;
+                auto child = root->left != nullptr ? root->left : root->right;
                 delete root;
-                return nullptr;
+                return child;
             }
-            else if (root->left == nullptr) {
-                m_size--;
-                auto right = root->right;
-                delete root;
-                root = right;
-            }
-            else if (root->right == nullptr) {
-                m_size--;
-                auto left = root->left;
-                delete root;
-                root = left;
-            } else {
-                auto succ = root->right;
-                while (succ->left != nullptr) {
-                    succ = succ->left;
-                }
-                std::swap(succ->key, root->key);
-                root->right = remove(root->right, key);
-            }            
+
+            // Otherwise, swap the successor and the root then remove the successor.
+            auto succ = successor(root, root->key);
+            std::swap(succ->key, root->key);
+            root->right = remove(root->right, key);
         }
 
+        // Remove the key from the correct subtree.
         if (key < root->key) {
             root->left = remove(root->left, key);
         } else {
             root->right = remove(root->right, key);
         }
 
-        // Left-heavy. Remove in right.
+        // If the left subtree is too high, fix it.
         if (height(root->left) > height(root->right) + 1) {
+            // If the left right subtree is too high, make the left left subtree high instead.
             if (root->left && height(root->left->right) > height(root->left->left) + 1) {
                 root->left = rotate_left(root->left);
             }
+            // Fix the high left left subtree.
             return rotate_right(root);
         }
 
-        // Right-heavy. Remove in left.
+        // If the right subtree is too high, fix it.
         if (height(root->right) > height(root->left) + 1) {
+            // If the right left subtree is too high, make the right right subtree high instead.
             if (root->right && height(root->right->left) > height(root->right->right) + 1) {
                 root->right = rotate_right(root->right);
             }
+            // Fix the high right right subtree.
             return rotate_left(root);
         }
 
