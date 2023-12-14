@@ -220,7 +220,7 @@ private:
 
         // Left-heavy. Remove in right.
         if (height(root->left) > height(root->right) + 1) {
-            if (height(root->right) > height(root->left) + 1) {
+            if (root->left && height(root->left->right) > height(root->left->left) + 1) {
                 root->left = rotate_left(root->left);
             }
             return rotate_right(root);
@@ -228,12 +228,13 @@ private:
 
         // Right-heavy. Remove in left.
         if (height(root->right) > height(root->left) + 1) {
-            if (height(root->left) > height(root->right) + 1) {
+            if (root->right && height(root->right->left) > height(root->right->right) + 1) {
                 root->right = rotate_right(root->right);
             }
             return rotate_left(root);
         }
 
+        assert(std::abs((int)height(root->left) - (int)height(root->right)) <= 1);
         return root;
     }
 
