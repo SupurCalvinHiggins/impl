@@ -21,6 +21,35 @@ private:
     node_ptr m_root;
     size_type m_size;
 
+    bool contains(node_ptr root, key_type key) const {
+        if (root == nullptr) {
+            return false;
+        }
+
+        if (root->size == 1) {
+            if (key == root->keys[0]) {
+                return true;
+            }
+            if (key < root->keys[0]) {
+                return contains(root->children[0], key);
+            }
+            return contains(root->children[1], key);
+        }
+
+        else if (root->size == 2) {
+            if (key == root->keys[0] || key == root->keys[1]) {
+                return true;
+            }
+            if (key < root->keys[0]) {
+                return contains(root->children[0], key);
+            }
+            if (key < root->keys[1]) {
+                return contains(root->children[1], key);
+            }
+            return contains(root->children[2], key);
+        }
+    }
+
     node_ptr rotate_left(node_ptr root, size_type pivot) const {
         assert(root != nullptr);
         assert(pivot < root->size);
@@ -190,10 +219,10 @@ private:
     }
 
 public:
-    TwoThreeTree() {}
+    TwoThreeTree() : m_root(nullptr), m_size(0) {}
 
     bool contains(key_type key) const {
-        return false;
+        return contains(m_root, key);
     }
 
     std::optional<key_type> predecessor(key_type key) const {
