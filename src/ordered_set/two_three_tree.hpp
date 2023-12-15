@@ -101,6 +101,7 @@ private:
         // Destructure root.
         auto z = root->keys[pivot];
         auto l = root->children[pivot];
+        // TODO: either for left or right this should be -1
         auto r = root->children[pivot+1];
 
         assert(l != nullptr);
@@ -335,7 +336,44 @@ private:
     }
 
     node_ptr remove(node_ptr root, key_type key) {
-        return nullptr;
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
+            if (root->children[0] == nullptr) {
+                --m_size;
+                // TODO: remove the key.
+                return root;
+            } 
+            
+            // TODO: swap with succ
+        }
+
+        size_type pivot = -1;
+        if (key < root->keys[0]) {
+            pivot = 0;
+        } else if ((root->size == 1) || (key < root->keys[1])) {
+            pivot = 1;
+        } else {
+            pivot = 2;
+        }
+
+        root->children[pivot] = remove(root->children[pivot], key);
+        if (root->children[pivot]->size != 0) {
+            return root;
+        }
+
+        // TODO: balance.
+        if (root->size == 2) {
+            if (pivot != 2) {
+                
+            }
+        } else {
+
+        }
+
+        return root;
     }
 
 public:
