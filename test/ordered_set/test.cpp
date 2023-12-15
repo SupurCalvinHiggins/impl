@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../../src/ordered_set/avl-tree.hpp"
+#include "../../src/ordered_set/avl_tree.hpp"
 #include "../../src/ordered_set/stl_ordered_set.hpp"
 
 enum Op {
