@@ -181,6 +181,7 @@ private:
 
     node_ptr merge_right(node_ptr root, size_type pivot) const {
         assert(root != nullptr);
+        // TODO: called with pivot as children idx but this assumes pivot is keys idx.
         assert(pivot < root->size);
 
         // Destructure root.
@@ -263,6 +264,7 @@ private:
         kick->keys[0] = x;
         kick->children[0] = a;
         kick->children[1] = b;
+        kick->children[2] = nullptr;
         kick->size = 1;
 
         auto node = new node_value({z, 0}, {c, d, nullptr}, 1);
@@ -270,7 +272,9 @@ private:
         root->keys[0] = y;
         root->children[0] = kick;
         root->children[1] = node;
-        root->size = 1;
+        root->children[2] = nullptr;
+        // Root is kicked.
+        root->size = 0;
         return root;
     }
 
@@ -343,11 +347,27 @@ private:
         if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
             if (root->children[0] == nullptr) {
                 --m_size;
-                // TODO: remove the key.
+                if (root->keys[0] == key) {
+                    root->keys[0] = 0;
+                    if (root->size == 2) {
+                        std::swap(root->keys[0], root->keys[1]);
+                    }
+                } else {
+                    root->keys[1] = 0;
+                }
+                root->size--;
                 return root;
             } 
             
-            // TODO: swap with succ
+            auto succ = root->children[root->size];
+            while (succ->children[0] != nullptr) {
+                succ = succ->children[0];
+            }
+            if (root->keys[0] == key) {
+                std::swap(succ->keys[0], root->keys[0]);
+            } else {
+                std::swap(succ->keys[0], root->keys[1]);
+            }
         }
 
         size_type pivot = -1;
@@ -366,11 +386,41 @@ private:
 
         // TODO: balance.
         if (root->size == 2) {
-            if (pivot != 2) {
-                
+            if (pivot == 0) {
+                if (root->children[1]->size == 1) {
+                    root = merge_left(root, pivot);
+                } else {
+                    root = rotate_left(root, pivot);
+                }
+            } else if (pivot == 1) {
+                if (root->children[0]->size == 2) {
+                    root = rotate_right(root, pivot);
+                } else if (root->children[2]->size == 2) {
+                    root = rotate_left(root, pivot);
+                } else {
+                    root = merge_left(root, pivot);
+                }
+            } else {
+                if (root->children[1]->size == 1) {
+                    root = merge_right(root, pivot);
+                } else {
+                    root = rotate_right(root, pivot);
+                }
             }
         } else {
-
+            if (pivot == 0) {
+                if (root->children[1]->size == 1) {
+                    root = merge_left(root, pivot);
+                } else {
+                    root = rotate_left(root, pivot);
+                }
+            } else {
+                if (root->children[0]->size == 1) {
+                    root = merge_right(root, pivot);
+                } else {
+                    root = rotate_right(root, pivot);
+                }
+            }
         }
 
         return root;
@@ -397,6 +447,7 @@ public:
 
     void insert(key_type key) {
         m_root = insert(m_root, key);
+        if (m_root->size == 0) m_root->size = 1;
     }
 
     void remove(key_type key) {
