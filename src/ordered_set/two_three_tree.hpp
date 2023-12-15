@@ -14,7 +14,8 @@ private:
         std::array<Node*, 3> children;
         size_type size;
 
-        Node(key_type key) : keys{key, 0}, children{nullptr}, size(1) { }
+        Node(std::array<key_type, 2> keys, std::array<Node*, 3> children, size_type size)
+            : keys(keys), children(children), size(size) { }
     };
 
     using node_value = Node;
@@ -38,7 +39,7 @@ private:
             return contains(root->children[1], key);
         }
 
-        else if (root->size == 2) {
+        else {
             if (key == root->keys[0] || key == root->keys[1]) {
                 return true;
             }
@@ -220,72 +221,121 @@ private:
         return root;
     }
 
-    node_ptr fix_kick(node_ptr root, size_type child) const {
-        if (root->size == 1) {
-            
-        } else {
+    node_ptr split(node_ptr root, size_type pivot) {
+        assert(root->size == 2);
 
+        // Destructure root.
+        auto kick = root->children[pivot];
+        assert(kick->size == 0);
+
+        // Destructure kick.
+        node_ptr a, b, c, d;
+        key_type x, y, z;
+
+        if (pivot == 0) {
+            x = kick->keys[0];
+            y = root->keys[0];
+            z = root->keys[1];
+            a = kick->children[0];
+            b = kick->children[1];
+            c = root->children[1];
+            d = root->children[2];
+        } else if (pivot == 1) {
+            x = root->keys[0];
+            y = kick->keys[0];
+            z = root->keys[1];
+            a = root->children[0];
+            b = kick->children[0];
+            c = kick->children[1];
+            d = root->children[2];
+        } else {
+            x = root->keys[0];
+            y = root->keys[1];
+            z = kick->keys[0];
+            a = root->children[0];
+            b = root->children[1];
+            c = kick->children[0];
+            d = kick->children[1];
         }
+
+        // Split.
+        kick->keys[0] = x;
+        kick->children[0] = a;
+        kick->children[1] = b;
+        kick->size = 1;
+
+        auto node = new node_value({z, 0}, {c, d, nullptr}, 1);
+
+        root->keys[0] = y;
+        root->children[0] = kick;
+        root->children[1] = node;
+        root->size = 1;
+        return root;
     }
 
     node_ptr insert(node_ptr root, key_type key) {
         if (root == nullptr) {
-            return new node_value(key);
+            ++m_size;
+            return new node_value({key, 0}, {nullptr, nullptr, nullptr}, 1);
+        }
+        
+        if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
+            return root;
         }
 
-        if (root->size == 1) {
-            if (key == root->keys[0]) {
-                return root;
-            }
-
-            if (root->children[0] == nullptr) {
-                ++m_size;
+        if (root->children[0] == nullptr) {
+            ++m_size;
+            if (root->size == 1) {
                 root->keys[1] = key;
                 root->children[2] = nullptr;
                 root->size = 2;
+                if (root->keys[0] > root->keys[1]) {
+                    std::swap(root->keys[0], root->keys[1]);
+                }
                 return root;
-            }
-
-            if (key < root->keys[0]) {
-                root->children[0] = insert(root->children[0], key);
-                return fix_kick(root, 0);
             } else {
-                root->children[1] = insert(root->children[1], key);
-                return fix_kick(root, 1);
-            }
-        } else {
-            if (key == root->keys[0] || key == root->keys[1]) {
-                return root;
-            }
-
-            if (root->children[0] == nullptr) {
-                ++m_size;
-                auto node = new node_value(key);
-                auto left = new node_value(root->keys[0]);
-                auto right = new node_value(root->keys[1]);
-                node->children[0] = left;
-                node->children[1] = right;
-                node->size = 0;
-                return node;
-            } 
-
-            if (key < root->keys[0]) {
-                root->children[0] = insert(root->children[0], key);
-                return fix_kick(root, 0);
-            } else if (key < root->keys[1]) {
-                root->children[1] = insert(root->children[1], key);
-                return fix_kick(root, 1);
-            } else {
-                root->children[2] = insert(root->children[2], key);
-                return fix_kick(root, 2);
+                auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 0);
+                size_type pivot = -1;
+                if (key < root->keys[0]) {
+                    pivot = 0;
+                } else if ((root->size == 1) || (key < root->keys[1])) {
+                    pivot = 1;
+                } else {
+                    pivot = 2;
+                }
+                root->children[pivot] = node;
+                return split(root, pivot);
             }
         }
+
+        size_type pivot = -1;
+        if (key < root->keys[0]) {
+            pivot = 0;
+        } else if ((root->size == 1) || (key < root->keys[1])) {
+            pivot = 1;
+        } else {
+            pivot = 2;
+        }
+
+        root->children[pivot] = insert(root->children[pivot], key);
+        if (root->children[pivot]->size != 0) {
+            return root;
+        }
+
+        if (root->size == 1) {
+            auto node = new node_value({0, 0}, {root->children[pivot], nullptr, nullptr}, 0);
+            root->children[pivot] = node;
+            if (pivot == 0) {
+                return merge_left(root, pivot);
+            }
+            return merge_right(root, pivot);
+        }
+
+        return split(root, pivot);
     }
 
     node_ptr remove(node_ptr root, key_type key) {
-        if (root == nullptr) {
-            return;
-        }
+        return nullptr;
     }
 
 public:
