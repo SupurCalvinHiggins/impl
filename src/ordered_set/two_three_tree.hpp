@@ -13,6 +13,8 @@ private:
         std::array<key_type, 2> keys;
         std::array<Node*, 3> children;
         size_type size;
+
+        Node(key_type key) : keys{key, 0}, children{nullptr}, size(1) { }
     };
 
     using node_value = Node;
@@ -218,6 +220,74 @@ private:
         return root;
     }
 
+    node_ptr fix_kick(node_ptr root, size_type child) const {
+        if (root->size == 1) {
+            
+        } else {
+
+        }
+    }
+
+    node_ptr insert(node_ptr root, key_type key) {
+        if (root == nullptr) {
+            return new node_value(key);
+        }
+
+        if (root->size == 1) {
+            if (key == root->keys[0]) {
+                return root;
+            }
+
+            if (root->children[0] == nullptr) {
+                ++m_size;
+                root->keys[1] = key;
+                root->children[2] = nullptr;
+                root->size = 2;
+                return root;
+            }
+
+            if (key < root->keys[0]) {
+                root->children[0] = insert(root->children[0], key);
+                return fix_kick(root, 0);
+            } else {
+                root->children[1] = insert(root->children[1], key);
+                return fix_kick(root, 1);
+            }
+        } else {
+            if (key == root->keys[0] || key == root->keys[1]) {
+                return root;
+            }
+
+            if (root->children[0] == nullptr) {
+                ++m_size;
+                auto node = new node_value(key);
+                auto left = new node_value(root->keys[0]);
+                auto right = new node_value(root->keys[1]);
+                node->children[0] = left;
+                node->children[1] = right;
+                node->size = 0;
+                return node;
+            } 
+
+            if (key < root->keys[0]) {
+                root->children[0] = insert(root->children[0], key);
+                return fix_kick(root, 0);
+            } else if (key < root->keys[1]) {
+                root->children[1] = insert(root->children[1], key);
+                return fix_kick(root, 1);
+            } else {
+                root->children[2] = insert(root->children[2], key);
+                return fix_kick(root, 2);
+            }
+        }
+    }
+
+    node_ptr remove(node_ptr root, key_type key) {
+        if (root == nullptr) {
+            return;
+        }
+    }
+
 public:
     TwoThreeTree() : m_root(nullptr), m_size(0) {}
 
@@ -238,10 +308,10 @@ public:
     }
 
     void insert(key_type key) {
-        
+        m_root = insert(m_root, key);
     }
 
     void remove(key_type key) {
-
+        m_root = remove(m_root, key);
     }
 };
