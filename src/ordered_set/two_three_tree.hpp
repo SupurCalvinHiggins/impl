@@ -16,6 +16,39 @@ private:
 
         Node(std::array<key_type, 2> keys, std::array<Node*, 3> children, size_type size)
             : keys(keys), children(children), size(size) { }
+        
+        bool ok() const {
+            if (size == 0) {
+                return (
+                    (keys[0] == 0)
+                    && (keys[1] == 0)
+                    && (children[0] != nullptr)
+                    && (children[1] == nullptr)
+                    && (children[2] == nullptr)
+                );
+            } else if (size == 1) {
+                return (
+                    (keys[1] == 0)
+                    && (children[0] != nullptr)
+                    && (children[1] != nullptr)
+                    && (children[2] == nullptr)
+                ) || (children[0] == nullptr && children[1] == nullptr && children[2] == nullptr);
+            } else if (size == 2) {
+                return (
+                    (children[0] != nullptr)
+                    && (children[1] != nullptr)
+                    && (children[2] != nullptr)
+                ) || (children[0] == nullptr && children[1] == nullptr && children[2] == nullptr);
+            } else if (size == 3) {
+                return (
+                    (keys[1] == 0)
+                    && (children[0] != nullptr)
+                    && (children[1] != nullptr)
+                    && (children[2] == nullptr)
+                );
+            }
+            return false;
+        }
     };
 
     using node_value = Node;
@@ -82,6 +115,7 @@ private:
         l->children[1] = b;
         l->children[2] = 0;
         l->size = 1;
+        assert(l->ok());
 
         r->keys[0] = z;
         r->keys[1] = 0;
@@ -89,8 +123,10 @@ private:
         r->children[1] = d;
         r->children[2] = nullptr;
         r->size = 1;
+        assert(r->ok());
 
         root->keys[pivot] = y;
+        assert(root->ok());
         return root;
     }
 
@@ -124,6 +160,7 @@ private:
         l->children[1] = b;
         l->children[2] = nullptr;
         l->size = 1;
+        assert(l->ok());
 
         r->keys[0] = z;
         r->keys[1] = 0;
@@ -131,8 +168,10 @@ private:
         r->children[1] = d;
         r->children[2] = nullptr;
         r->size = 1;
+        assert(r->ok());
 
         root->keys[pivot] = y;
+        assert(root->ok());
         return root;
     }
 
@@ -144,6 +183,8 @@ private:
         auto x = root->keys[pivot];
         auto l = root->children[pivot];
         auto r = root->children[pivot+1];
+        assert(l->ok());
+        assert(r->ok());
 
         assert(l != nullptr);
         assert(r != nullptr);
@@ -163,6 +204,7 @@ private:
         l->children[1] = b;
         l->children[2] = c;
         l->size = 2;
+        assert(l->ok());
 
         delete r;
 
@@ -176,6 +218,7 @@ private:
             std::swap(root->keys[pivot], root->keys[pivot+1]);
         }
         root->size--;
+        assert(root->ok());
         return root;
     }
 
@@ -188,6 +231,8 @@ private:
         auto y = root->keys[pivot];
         auto l = root->children[pivot];
         auto r = root->children[pivot+1];
+        assert(l->ok());
+        assert(r->ok());
 
         assert(l != nullptr);
         assert(r != nullptr);
@@ -198,7 +243,7 @@ private:
         auto x = l->keys[0];
         auto a = l->children[0];
         auto b = l->children[1];
-        auto c = r->children[2];
+        auto c = r->children[0];
 
         // Merge.
         l->keys[0] = x;
@@ -207,6 +252,7 @@ private:
         l->children[1] = b;
         l->children[2] = c;
         l->size = 2;
+        assert(l->ok());
 
         delete r;
 
@@ -220,6 +266,7 @@ private:
             std::swap(root->keys[pivot], root->keys[pivot+1]);
         }
         root->size--;
+        assert(root->ok());
         return root;
     }
 
@@ -228,7 +275,7 @@ private:
 
         // Destructure root.
         auto kick = root->children[pivot];
-        assert(kick->size == 0);
+        assert(kick->size == 3);
 
         // Destructure kick.
         node_ptr a, b, c, d;
@@ -266,15 +313,19 @@ private:
         kick->children[1] = b;
         kick->children[2] = nullptr;
         kick->size = 1;
+        assert(kick->ok());
 
         auto node = new node_value({z, 0}, {c, d, nullptr}, 1);
+        assert(node->ok());
 
         root->keys[0] = y;
+        root->keys[1] = 0;
         root->children[0] = kick;
         root->children[1] = node;
         root->children[2] = nullptr;
         // Root is kicked.
-        root->size = 0;
+        root->size = 3;
+        assert(root->ok());
         return root;
     }
 
@@ -297,9 +348,10 @@ private:
                 if (root->keys[0] > root->keys[1]) {
                     std::swap(root->keys[0], root->keys[1]);
                 }
+                assert(root->ok());
                 return root;
             } else {
-                auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 0);
+                auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 3);
                 size_type pivot = -1;
                 if (key < root->keys[0]) {
                     pivot = 0;
@@ -309,6 +361,7 @@ private:
                     pivot = 2;
                 }
                 root->children[pivot] = node;
+                // assert(root->ok());
                 return split(root, pivot);
             }
         }
@@ -323,17 +376,24 @@ private:
         }
 
         root->children[pivot] = insert(root->children[pivot], key);
-        if (root->children[pivot]->size != 0) {
+        if (root->children[pivot]->size != 3) {
+            assert(root->ok());
             return root;
         }
 
         if (root->size == 1) {
-            auto node = new node_value({0, 0}, {root->children[pivot], nullptr, nullptr}, 0);
-            root->children[pivot] = node;
+            root->children[pivot]->size = 1;
+            auto node = new node_value({0, 0}, {root->children[1-pivot], nullptr, nullptr}, 0);
+            root->children[1-pivot] = node;
+            assert(root->ok());
             if (pivot == 0) {
-                return merge_left(root, pivot);
+                root = merge_right(root, 0)->children[0];
+                assert(root->size == 2);
+                return root;
             }
-            return merge_right(root, pivot);
+            root = merge_left(root, 0)->children[0];
+            assert(root->size == 2);
+            return root;
         }
 
         return split(root, pivot);
@@ -380,7 +440,7 @@ private:
         }
 
         root->children[pivot] = remove(root->children[pivot], key);
-        if (root->children[pivot]->size != 0) {
+        if (root->children[pivot] == nullptr || root->children[pivot]->size != 0) {
             return root;
         }
 
@@ -394,7 +454,7 @@ private:
                 }
             } else if (pivot == 1) {
                 if (root->children[0]->size == 2) {
-                    root = rotate_right(root, pivot);
+                    root = rotate_right(root, pivot-1);
                 } else if (root->children[2]->size == 2) {
                     root = rotate_left(root, pivot);
                 } else {
@@ -402,9 +462,9 @@ private:
                 }
             } else {
                 if (root->children[1]->size == 1) {
-                    root = merge_right(root, pivot);
+                    root = merge_right(root, pivot-1);
                 } else {
-                    root = rotate_right(root, pivot);
+                    root = rotate_right(root, pivot-1);
                 }
             }
         } else {
@@ -416,9 +476,9 @@ private:
                 }
             } else {
                 if (root->children[0]->size == 1) {
-                    root = merge_right(root, pivot);
+                    root = merge_right(root, pivot-1);
                 } else {
-                    root = rotate_right(root, pivot);
+                    root = rotate_right(root, pivot-1);
                 }
             }
         }
@@ -447,10 +507,12 @@ public:
 
     void insert(key_type key) {
         m_root = insert(m_root, key);
-        if (m_root->size == 0) m_root->size = 1;
+        if (m_root->size == 3) m_root->size = 1;
+        assert(contains(key));
     }
 
     void remove(key_type key) {
         m_root = remove(m_root, key);
+        assert(!contains(key));
     }
 };
