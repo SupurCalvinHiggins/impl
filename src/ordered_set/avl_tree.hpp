@@ -201,9 +201,7 @@ private:
             std::swap(succ->key, root->key);
             root->right = remove(root->right, key);
         }
-
-        // Remove the key from the correct subtree.
-        if (key < root->key) {
+        else if (key < root->key) {
             root->left = remove(root->left, key);
         } else {
             root->right = remove(root->right, key);
