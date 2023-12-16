@@ -86,6 +86,7 @@ private:
 
         node_ptr l, r, a, b, c, d;
         key_type x, y, z;
+        size_type li;
 
         auto is_left = (
             (pivot != root->size)
@@ -112,9 +113,7 @@ private:
             b = r->children[0];
             c = r->children[1];
             d = r->children[2];
-
-            // Rotate root.
-            root->keys[pivot] = y;
+            li = pivot;
         } 
 
         // Destructure for right rotation.
@@ -137,9 +136,7 @@ private:
             b = l->children[1];
             c = l->children[2];
             d = r->children[0];
-
-            // Rotate root.
-            root->keys[pivot-1] = y;
+            li = pivot - 1;
         }
 
         // Rotate left subtree.
@@ -160,6 +157,10 @@ private:
         r->size = 1;
         assert(r->ok());
 
+        // Rotate root.
+        root->keys[li] = y;
+        assert(root->ok());
+
         return root;
     }
 
@@ -169,6 +170,7 @@ private:
 
         node_ptr l, r, a, b, c;
         key_type x, y;
+        size_type li;
 
         auto is_left = (
             (pivot != root->size)
@@ -193,17 +195,8 @@ private:
             a = l->children[0];
             b = r->children[0];
             c = r->children[1];
-
-            // Merge root.
-            root->children[pivot] = l;
-            root->children[pivot+1] = nullptr;
-            root->keys[pivot] = 0;
-            if (root->size == 2 && pivot == 0) {
-                std::swap(root->children[pivot+1], root->children[pivot+2]);
-                std::swap(root->keys[pivot], root->keys[pivot+1]);
-            }
-            root->size--;
-            assert(root->ok());  
+            li = pivot;
+            
         } 
 
         // Destructure for right merge.
@@ -224,17 +217,7 @@ private:
             a = l->children[0];
             b = l->children[1];
             c = r->children[0];
-
-            // Merge root.
-            root->children[pivot-1] = l;
-            root->children[pivot] = nullptr;
-            root->keys[pivot-1] = 0;
-            if (root->size == 2 && pivot-1 == 0) {
-                std::swap(root->children[pivot], root->children[pivot+1]);
-                std::swap(root->keys[pivot-1], root->keys[pivot]);
-            }
-            root->size--;
-            assert(root->ok());           
+            li = pivot - 1;       
         }
 
         // Merge left subtree.
@@ -248,6 +231,17 @@ private:
 
         // Merge right subtree.
         delete r;
+
+        // Merge root.
+        root->children[li] = l;
+        root->children[li+1] = nullptr;
+        root->keys[li] = 0;
+        if (root->size == 2 && li == 0) {
+            std::swap(root->children[li+1], root->children[li+2]);
+            std::swap(root->keys[li], root->keys[li+1]);
+        }
+        root->size--;
+        assert(root->ok());  
 
         return root;
     }
@@ -305,7 +299,6 @@ private:
         root->children[0] = kick;
         root->children[1] = node;
         root->children[2] = nullptr;
-        // Root is kicked.
         root->size = KICK;
         assert(root->ok());
         return root;
@@ -314,30 +307,12 @@ private:
     node_ptr insert(node_ptr root, key_type key) {
         if (root == nullptr) {
             ++m_size;
-            return new node_value({key, 0}, {nullptr, nullptr, nullptr}, 1);
+            return new node_value({key, 0}, {nullptr, nullptr, nullptr}, KICK);
         }
 
         auto pivot = find_pivot(root, key);
         if ((pivot < root->size) && (key == root->keys[pivot])) {
             return root;
-        }
-
-        if (root->children[0] == nullptr) {
-            ++m_size;
-            if (root->size == 1) {
-                root->keys[1] = key;
-                root->children[2] = nullptr;
-                root->size = 2;
-                if (root->keys[0] > root->keys[1]) {
-                    std::swap(root->keys[0], root->keys[1]);
-                }
-                assert(root->ok());
-                return root;
-            }
-
-            auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, KICK);
-            root->children[pivot] = node;
-            return split(root, pivot);
         }
 
         root->children[pivot] = insert(root->children[pivot], key);
@@ -391,21 +366,14 @@ private:
             } else {
                 std::swap(succ->keys[0], root->keys[1]);
             }
-
-            root->children[succ_idx] = remove(root->children[succ_idx], key);
-            pivot = succ_idx;
-            goto balance;
+            pivot = succ_idx;            
         }
 
         root->children[pivot] = remove(root->children[pivot], key);
-        balance:
         if (root->children[pivot] == nullptr || root->children[pivot]->size != 0) {
             return root;
         }
-        // assert(root->children[pivot]->ok());
-        // assert(root->ok());
-        
-        // TODO: balance.
+
         auto is_rotate = (
             (pivot == 0 && root->children[pivot+1]->size == 2)
             || (pivot == root->size && root->children[pivot-1]->size == 2)
