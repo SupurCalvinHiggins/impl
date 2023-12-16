@@ -57,6 +57,9 @@ private:
     node_ptr m_root;
     size_type m_size;
 
+    static constexpr size_type HOLE = 0;
+    static constexpr size_type KICK = 3;
+
     size_type find_pivot(const node_ptr root, const key_type key) const {
         assert(root != nullptr);
         auto it = std::lower_bound(
@@ -88,7 +91,7 @@ private:
 
         assert(l != nullptr);
         assert(r != nullptr);
-        assert(l->size == 0);
+        assert(l->size == HOLE);
         assert(r->size == 2);
 
         // Destructure left and right.
@@ -134,7 +137,7 @@ private:
         assert(l != nullptr);
         assert(r != nullptr);
         assert(l->size == 2);
-        assert(r->size == 0);
+        assert(r->size == HOLE);
 
         // Destructure left and right.
         auto x = l->keys[0];
@@ -179,7 +182,7 @@ private:
 
         assert(l != nullptr);
         assert(r != nullptr);
-        assert(l->size == 0);
+        assert(l->size == HOLE);
         assert(r->size == 1);
 
         // Destructure left and right.
@@ -266,7 +269,7 @@ private:
 
         // Destructure root.
         auto kick = root->children[pivot];
-        assert(kick->size == 3);
+        assert(kick->size == KICK);
 
         // Destructure kick.
         node_ptr a, b, c, d;
@@ -315,7 +318,7 @@ private:
         root->children[1] = node;
         root->children[2] = nullptr;
         // Root is kicked.
-        root->size = 3;
+        root->size = KICK;
         assert(root->ok());
         return root;
     }
@@ -344,13 +347,13 @@ private:
                 return root;
             }
 
-            auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 3);
+            auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, KICK);
             root->children[pivot] = node;
             return split(root, pivot);
         }
 
         root->children[pivot] = insert(root->children[pivot], key);
-        if (root->children[pivot]->size != 3) {
+        if (root->children[pivot]->size != KICK) {
             assert(root->ok());
             return root;
         }
@@ -482,13 +485,15 @@ public:
 
     void insert(key_type key) {
         m_root = insert(m_root, key);
-        if (m_root->size == 3) m_root->size = 1;
+        if (m_root->size == KICK) {
+            m_root->size = 1;
+        }
         assert(contains(key));
     }
 
     void remove(key_type key) {
         m_root = remove(m_root, key);
-        if (m_root != nullptr && m_root->size == 0) {
+        if (m_root != nullptr && m_root->size == HOLE) {
             auto root = m_root->children[0];
             delete m_root;
             m_root = root;
