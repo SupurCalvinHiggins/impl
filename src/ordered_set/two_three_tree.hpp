@@ -351,11 +351,6 @@ private:
             auto node = new node_value({0, 0}, {root->children[1-pivot], nullptr, nullptr}, 0);
             root->children[1-pivot] = node;
             assert(root->ok());
-            if (pivot == 0) {
-                root = merge(root, 1-pivot)->children[0];
-                assert(root->size == 2);
-                return root;
-            }
             root = merge(root, 1-pivot)->children[0];
             assert(root->size == 2);
             return root;
@@ -411,45 +406,15 @@ private:
         // assert(root->ok());
         
         // TODO: balance.
-        if (root->size == 2) {
-            if (pivot == 0) {
-                if (root->children[1]->size == 1) {
-                    root = merge(root, pivot);
-                } else {
-                    root = rotate(root, pivot);
-                }
-            } else if (pivot == 1) {
-                if (root->children[0]->size == 2) {
-                    root = rotate(root, pivot);
-                } else if (root->children[2]->size == 2) {
-                    root = rotate(root, pivot);
-                } else {
-                    root = merge(root, pivot);
-                }
-            } else {
-                if (root->children[1]->size == 1) {
-                    root = merge(root, pivot);
-                } else {
-                    root = rotate(root, pivot);
-                }
-            }
-        } else {
-            if (pivot == 0) {
-                if (root->children[1]->size == 1) {
-                    root = merge(root, pivot);
-                } else {
-                    root = rotate(root, pivot);
-                }
-            } else {
-                if (root->children[0]->size == 1) {
-                    root = merge(root, pivot);
-                } else {
-                    root = rotate(root, pivot);
-                }
-            }
+        auto is_rotate = (
+            (pivot == 0 && root->children[pivot+1]->size == 2)
+            || (pivot == root->size && root->children[pivot-1]->size == 2)
+            || (pivot != 0 && pivot != root->size && (root->children[pivot+1]->size == 2 || root->children[pivot-1]->size == 2))
+        );
+        if (is_rotate) {
+            return rotate(root, pivot);
         }
-
-        return root;
+        return merge(root, pivot);
     }
 
 public:
