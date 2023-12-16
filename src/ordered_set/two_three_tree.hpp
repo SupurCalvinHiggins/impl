@@ -419,8 +419,9 @@ private:
                 root->size--;
                 return root;
             } 
-            
-            auto succ = root->children[root->size];
+
+            auto succ_idx = root->keys[0] == key ? 1 : 2;
+            auto succ = root->children[succ_idx];
             while (succ->children[0] != nullptr) {
                 succ = succ->children[0];
             }
@@ -430,8 +431,8 @@ private:
                 std::swap(succ->keys[0], root->keys[1]);
             }
 
-            root->children[root->size] = remove(root->children[root->size], key);
-            pivot = root->size;
+            root->children[succ_idx] = remove(root->children[succ_idx], key);
+            pivot = succ_idx;
             goto balance;
         }
 
