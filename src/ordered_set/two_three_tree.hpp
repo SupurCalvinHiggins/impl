@@ -80,74 +80,69 @@ private:
         return contains(root->children[pivot], key);
     }
 
-    node_ptr rotate_left(node_ptr root, size_type pivot) const {
+    node_ptr rotate(node_ptr root, size_type pivot) const {
         assert(root != nullptr);
-        assert(pivot < root->size);
-        
-        // Destructure root.
-        auto x = root->keys[pivot];
-        auto l = root->children[pivot];
-        auto r = root->children[pivot+1];
+        assert(pivot <= root->size);
 
-        assert(l != nullptr);
-        assert(r != nullptr);
-        assert(l->size == HOLE);
-        assert(r->size == 2);
+        node_ptr l, r, a, b, c, d;
+        key_type x, y, z;
 
-        // Destructure left and right.
-        auto y = r->keys[0];
-        auto z = r->keys[1];
-        auto a = l->children[0];
-        auto b = r->children[0];
-        auto c = r->children[1];
-        auto d = r->children[2];
+        auto is_left = (
+            (pivot != root->size)
+            && (root->children[pivot+1]->size == 2) 
+        );
 
-        // Rotate.
-        l->keys[0] = x;
-        l->keys[1] = 0;
-        l->children[0] = a;
-        l->children[1] = b;
-        l->children[2] = 0;
-        l->size = 1;
-        assert(l->ok());
+        // Destructure for left rotation.
+        if (is_left) {
 
-        r->keys[0] = z;
-        r->keys[1] = 0;
-        r->children[0] = c;
-        r->children[1] = d;
-        r->children[2] = nullptr;
-        r->size = 1;
-        assert(r->ok());
+            // Destructure root.
+            x = root->keys[pivot];
+            l = root->children[pivot];
+            r = root->children[pivot+1];
 
-        root->keys[pivot] = y;
-        assert(root->ok());
-        return root;
-    }
+            assert(l != nullptr);
+            assert(r != nullptr);
+            assert(l->size == HOLE);
+            assert(r->size == 2);
 
-    node_ptr rotate_right(node_ptr root, size_type pivot) const {
-        assert(root != nullptr);
-        assert(pivot < root->size);
+            // Destructure left and right.
+            y = r->keys[0];
+            z = r->keys[1];
+            a = l->children[0];
+            b = r->children[0];
+            c = r->children[1];
+            d = r->children[2];
 
-        // Destructure root.
-        auto z = root->keys[pivot];
-        auto l = root->children[pivot];
-        // TODO: either for left or right this should be -1
-        auto r = root->children[pivot+1];
+            // Rotate root.
+            root->keys[pivot] = y;
+        } 
 
-        assert(l != nullptr);
-        assert(r != nullptr);
-        assert(l->size == 2);
-        assert(r->size == HOLE);
+        // Destructure for right rotation.
+        else {
 
-        // Destructure left and right.
-        auto x = l->keys[0];
-        auto y = l->keys[1];
-        auto a = l->children[0];
-        auto b = l->children[1];
-        auto c = l->children[2];
-        auto d = r->children[0];
+            // Destructure root.
+            z = root->keys[pivot-1];
+            l = root->children[pivot-1];
+            r = root->children[pivot];
 
-        // Rotate.
+            assert(l != nullptr);
+            assert(r != nullptr);
+            assert(l->size == 2);
+            assert(r->size == HOLE);
+
+            // Destructure left and right.
+            x = l->keys[0];
+            y = l->keys[1];
+            a = l->children[0];
+            b = l->children[1];
+            c = l->children[2];
+            d = r->children[0];
+
+            // Rotate root.
+            root->keys[pivot-1] = y;
+        }
+
+        // Rotate left subtree.
         l->keys[0] = x;
         l->keys[1] = 0;
         l->children[0] = a;
@@ -156,6 +151,7 @@ private:
         l->size = 1;
         assert(l->ok());
 
+        // Rotate right subtree.
         r->keys[0] = z;
         r->keys[1] = 0;
         r->children[0] = c;
@@ -164,34 +160,84 @@ private:
         r->size = 1;
         assert(r->ok());
 
-        root->keys[pivot] = y;
-        assert(root->ok());
         return root;
     }
 
-    node_ptr merge_left(node_ptr root, size_type pivot) const {
+    node_ptr merge(node_ptr root, size_type pivot) const {
         assert(root != nullptr);
-        assert(pivot < root->size);
+        assert(pivot <= root->size);
 
-        // Destructure root.
-        auto x = root->keys[pivot];
-        auto l = root->children[pivot];
-        auto r = root->children[pivot+1];
-        assert(l->ok());
-        assert(r->ok());
+        node_ptr l, r, a, b, c;
+        key_type x, y;
 
-        assert(l != nullptr);
-        assert(r != nullptr);
-        assert(l->size == HOLE);
-        assert(r->size == 1);
+        auto is_left = (
+            (pivot != root->size)
+            && (root->children[pivot+1]->size == 1) 
+        );
 
-        // Destructure left and right.
-        auto y = r->keys[0];
-        auto a = l->children[0];
-        auto b = r->children[0];
-        auto c = r->children[1];
+        // Destructure for left merge.
+        if (is_left) {
 
-        // Merge.
+            // Destructure root.
+            x = root->keys[pivot];
+            l = root->children[pivot];
+            r = root->children[pivot+1];
+
+            assert(l != nullptr);
+            assert(r != nullptr);
+            assert(l->size == HOLE);
+            assert(r->size == 1);
+
+            // Destructure left and right.
+            y = r->keys[0];
+            a = l->children[0];
+            b = r->children[0];
+            c = r->children[1];
+
+            // Merge root.
+            root->children[pivot] = l;
+            root->children[pivot+1] = nullptr;
+            root->keys[pivot] = 0;
+            if (root->size == 2 && pivot == 0) {
+                std::swap(root->children[pivot+1], root->children[pivot+2]);
+                std::swap(root->keys[pivot], root->keys[pivot+1]);
+            }
+            root->size--;
+            assert(root->ok());  
+        } 
+
+        // Destructure for right merge.
+        else {
+
+            // Destructure root.
+            y = root->keys[pivot-1];
+            l = root->children[pivot-1];
+            r = root->children[pivot];
+
+            assert(l != nullptr);
+            assert(r != nullptr);
+            assert(l->size == 1);
+            assert(r->size == HOLE);
+
+            // Destructure left and right.
+            x = l->keys[0];
+            a = l->children[0];
+            b = l->children[1];
+            c = r->children[0];
+
+            // Merge root.
+            root->children[pivot-1] = l;
+            root->children[pivot] = nullptr;
+            root->keys[pivot-1] = 0;
+            if (root->size == 2 && pivot-1 == 0) {
+                std::swap(root->children[pivot], root->children[pivot+1]);
+                std::swap(root->keys[pivot-1], root->keys[pivot]);
+            }
+            root->size--;
+            assert(root->ok());           
+        }
+
+        // Merge left subtree.
         l->keys[0] = x;
         l->keys[1] = y;
         l->children[0] = a;
@@ -200,67 +246,9 @@ private:
         l->size = 2;
         assert(l->ok());
 
+        // Merge right subtree.
         delete r;
 
-        root->children[pivot] = l;
-        root->children[pivot+1] = nullptr;
-        root->keys[pivot] = 0;
-
-        // Compaction.
-        if (root->size == 2 && pivot == 0) {
-            std::swap(root->children[pivot+1], root->children[pivot+2]);
-            std::swap(root->keys[pivot], root->keys[pivot+1]);
-        }
-        root->size--;
-        assert(root->ok());
-        return root;
-    }
-
-    node_ptr merge_right(node_ptr root, size_type pivot) const {
-        assert(root != nullptr);
-        // TODO: called with pivot as children idx but this assumes pivot is keys idx.
-        assert(pivot < root->size);
-
-        // Destructure root.
-        auto y = root->keys[pivot];
-        auto l = root->children[pivot];
-        auto r = root->children[pivot+1];
-        assert(l->ok());
-        assert(r->ok());
-
-        assert(l != nullptr);
-        assert(r != nullptr);
-        assert(l->size == 1);
-        assert(r->size == 0);
-
-        // Destructure left and right.
-        auto x = l->keys[0];
-        auto a = l->children[0];
-        auto b = l->children[1];
-        auto c = r->children[0];
-
-        // Merge.
-        l->keys[0] = x;
-        l->keys[1] = y;
-        l->children[0] = a;
-        l->children[1] = b;
-        l->children[2] = c;
-        l->size = 2;
-        assert(l->ok());
-
-        delete r;
-
-        root->children[pivot] = l;
-        root->children[pivot+1] = nullptr;
-        root->keys[pivot] = 0;
-
-        // Compaction.
-        if (root->size == 2 && pivot == 0) {
-            std::swap(root->children[pivot+1], root->children[pivot+2]);
-            std::swap(root->keys[pivot], root->keys[pivot+1]);
-        }
-        root->size--;
-        assert(root->ok());
         return root;
     }
 
@@ -364,11 +352,11 @@ private:
             root->children[1-pivot] = node;
             assert(root->ok());
             if (pivot == 0) {
-                root = merge_right(root, 0)->children[0];
+                root = merge(root, 1-pivot)->children[0];
                 assert(root->size == 2);
                 return root;
             }
-            root = merge_left(root, 0)->children[0];
+            root = merge(root, 1-pivot)->children[0];
             assert(root->size == 2);
             return root;
         }
@@ -426,37 +414,37 @@ private:
         if (root->size == 2) {
             if (pivot == 0) {
                 if (root->children[1]->size == 1) {
-                    root = merge_left(root, pivot);
+                    root = merge(root, pivot);
                 } else {
-                    root = rotate_left(root, pivot);
+                    root = rotate(root, pivot);
                 }
             } else if (pivot == 1) {
                 if (root->children[0]->size == 2) {
-                    root = rotate_right(root, pivot-1);
+                    root = rotate(root, pivot);
                 } else if (root->children[2]->size == 2) {
-                    root = rotate_left(root, pivot);
+                    root = rotate(root, pivot);
                 } else {
-                    root = merge_left(root, pivot);
+                    root = merge(root, pivot);
                 }
             } else {
                 if (root->children[1]->size == 1) {
-                    root = merge_right(root, pivot-1);
+                    root = merge(root, pivot);
                 } else {
-                    root = rotate_right(root, pivot-1);
+                    root = rotate(root, pivot);
                 }
             }
         } else {
             if (pivot == 0) {
                 if (root->children[1]->size == 1) {
-                    root = merge_left(root, pivot);
+                    root = merge(root, pivot);
                 } else {
-                    root = rotate_left(root, pivot);
+                    root = rotate(root, pivot);
                 }
             } else {
                 if (root->children[0]->size == 1) {
-                    root = merge_right(root, pivot-1);
+                    root = merge(root, pivot);
                 } else {
-                    root = rotate_right(root, pivot-1);
+                    root = rotate(root, pivot);
                 }
             }
         }
