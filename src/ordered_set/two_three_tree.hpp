@@ -404,6 +404,7 @@ private:
             return nullptr;
         }
 
+        size_type pivot = -1;
         if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
             if (root->children[0] == nullptr) {
                 --m_size;
@@ -428,9 +429,13 @@ private:
             } else {
                 std::swap(succ->keys[0], root->keys[1]);
             }
+
+            root->children[root->size] = remove(root->children[root->size], key);
+            pivot = root->size;
+            goto balance;
         }
 
-        size_type pivot = -1;
+        
         if (key < root->keys[0]) {
             pivot = 0;
         } else if ((root->size == 1) || (key < root->keys[1])) {
@@ -440,12 +445,13 @@ private:
         }
 
         root->children[pivot] = remove(root->children[pivot], key);
+        balance:
         if (root->children[pivot] == nullptr || root->children[pivot]->size != 0) {
             return root;
         }
         // assert(root->children[pivot]->ok());
         // assert(root->ok());
-
+        
         // TODO: balance.
         if (root->size == 2) {
             if (pivot == 0) {
