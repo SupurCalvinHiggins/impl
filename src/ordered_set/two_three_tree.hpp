@@ -60,27 +60,14 @@ private:
     static constexpr size_type HOLE = 0;
     static constexpr size_type KICK = 3;
 
-    size_type find_pivot(const node_ptr root, const key_type key) const {
+    static size_type find_pivot(const node_ptr root, const key_type key) {
         assert(root != nullptr);
         auto it = std::lower_bound(
             root->keys.begin(), root->keys.begin() + root->size, key);
         return std::distance(root->keys.begin(), it);
     }
 
-    bool contains(const node_ptr root, const key_type key) const {
-        if (root == nullptr) {
-            return false;
-        }
-
-        const auto pivot = find_pivot(root, key);
-        if ((pivot < root->size) && (key == root->keys[pivot])) {
-            return true;
-        }
-
-        return contains(root->children[pivot], key);
-    }
-
-    node_ptr rotate(node_ptr root, size_type pivot) const {
+    static node_ptr rotate(node_ptr root, const size_type pivot) {
         assert(root != nullptr);
         assert(pivot <= root->size);
 
@@ -164,7 +151,7 @@ private:
         return root;
     }
 
-    node_ptr merge(node_ptr root, size_type pivot) const {
+    static node_ptr merge(node_ptr root, const size_type pivot) {
         assert(root != nullptr);
         assert(pivot <= root->size);
 
@@ -246,8 +233,9 @@ private:
         return root;
     }
 
-    node_ptr split(node_ptr root, size_type pivot) {
+    static node_ptr split(node_ptr root, const size_type pivot) {
         assert(root->size == 2);
+        assert(pivot <= root->size);
 
         // Destructure root.
         auto kick = root->children[pivot];
@@ -304,6 +292,57 @@ private:
         return root;
     }
 
+    bool contains(const node_ptr root, const key_type key) const {
+        if (root == nullptr) {
+            return false;
+        }
+
+        const auto pivot = find_pivot(root, key);
+        if ((pivot < root->size) && (key == root->keys[pivot])) {
+            return true;
+        }
+
+        return contains(root->children[pivot], key);
+    }
+
+    node_ptr predecessor(const node_ptr root, const key_type key) const {
+        return nullptr;
+    }
+
+    // goal: return the node that contains the successor of the key
+    node_ptr successor(const node_ptr root, const key_type key) const {
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        auto pivot = find_pivot(root, key);
+
+        // case; no key and has right > in right or current or parent
+        // case; no key and no right > current or parent
+        if (pivot == root->size || root->keys[pivot] != key) {
+            const auto succ = successor(root->children[pivot], key);
+            if (succ == nullptr && pivot != root->size) {
+                return root;
+            }
+            return succ;
+        }
+
+        // case; found key and has right subtree > succ is rllll...
+        // case; found key and no right > current or parent
+        else {
+            ++pivot;
+            if (root->children[pivot] == nullptr) {
+                return pivot != root->size ? root : nullptr;
+            }
+
+            auto succ = root->children[pivot];
+            while (succ->children[0] != nullptr) {
+                succ = succ->children[0];
+            }
+            return succ;
+        }
+    }
+
     node_ptr insert(node_ptr root, key_type key) {
         if (root == nullptr) {
             ++m_size;
@@ -323,11 +362,9 @@ private:
 
         if (root->size == 1) {
             root->children[pivot]->size = 1;
-            auto node = new node_value({0, 0}, {root->children[1-pivot], nullptr, nullptr}, 0);
-            root->children[1-pivot] = node;
-            assert(root->ok());
+            root->children[1-pivot] = new node_value({0, 0}, {root->children[1-pivot], nullptr, nullptr}, HOLE);
+            // TODO: Fix memory leak.
             root = merge(root, 1-pivot)->children[0];
-            assert(root->size == 2);
             return root;
         }
 
@@ -361,11 +398,7 @@ private:
             while (succ->children[0] != nullptr) {
                 succ = succ->children[0];
             }
-            if (root->keys[0] == key) {
-                std::swap(succ->keys[0], root->keys[0]);
-            } else {
-                std::swap(succ->keys[0], root->keys[1]);
-            }
+            std::swap(succ->keys[0], root->keys[pivot]);
             pivot = succ_idx;            
         }
 
@@ -393,11 +426,19 @@ public:
     }
 
     std::optional<key_type> predecessor(key_type key) const {
-        return std::nullopt;
+        const auto pred = predecessor(m_root, key);
+        if (pred == nullptr) {
+            return std::nullopt;
+        }
+        return *std::lower_bound(pred->keys.begin(), pred->keys.begin() + pred->size, key);
     }
 
     std::optional<key_type> successor(key_type key) const {
-        return std::nullopt;
+        const auto succ = successor(m_root, key);
+        if (succ == nullptr) {
+            return std::nullopt;
+        }
+        return *std::upper_bound(succ->keys.begin(), succ->keys.begin() + succ->size, key);
     }
 
     size_type size() const {
