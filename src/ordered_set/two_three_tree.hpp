@@ -306,7 +306,35 @@ private:
     }
 
     node_ptr predecessor(const node_ptr root, const key_type key) const {
-        return nullptr;
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        auto pivot = find_pivot(root, key);
+
+        // case; no key and has left > in left or current or parent
+        // case; no key and no left > current or parent
+        if (pivot == root->size || root->keys[pivot] != key) {
+            const auto pred = predecessor(root->children[pivot], key);
+            if (pred == nullptr && pivot != 0) {
+                return root;
+            }
+            return pred;
+        }
+
+        // case; found key and has right subtree > succ is rllll...
+        // case; found key and no right > current or parent
+        else {
+            if (root->children[pivot] == nullptr) {
+                return pivot != 0 ? root : nullptr;
+            }
+
+            auto pred = root->children[pivot];
+            while (pred->children[find_pivot(pred, key)] != nullptr) {
+                pred = pred->children[find_pivot(pred, key)];
+            }
+            return pred;
+        }
     }
 
     // goal: return the node that contains the successor of the key
@@ -430,7 +458,7 @@ public:
         if (pred == nullptr) {
             return std::nullopt;
         }
-        return *std::lower_bound(pred->keys.begin(), pred->keys.begin() + pred->size, key);
+        return *(std::lower_bound(pred->keys.begin(), pred->keys.begin() + pred->size, key) - 1);
     }
 
     std::optional<key_type> successor(key_type key) const {
