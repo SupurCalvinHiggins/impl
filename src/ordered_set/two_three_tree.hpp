@@ -22,7 +22,7 @@ private:
                 return (
                     (keys[0] == 0)
                     && (keys[1] == 0)
-                    && (children[0] != nullptr)
+                    // && (children[0] != nullptr)
                     && (children[1] == nullptr)
                     && (children[2] == nullptr)
                 );
@@ -443,6 +443,8 @@ private:
         if (root->children[pivot] == nullptr || root->children[pivot]->size != 0) {
             return root;
         }
+        // assert(root->children[pivot]->ok());
+        // assert(root->ok());
 
         // TODO: balance.
         if (root->size == 2) {
@@ -513,6 +515,11 @@ public:
 
     void remove(key_type key) {
         m_root = remove(m_root, key);
+        if (m_root != nullptr && m_root->size == 0) {
+            auto root = m_root->children[0];
+            delete m_root;
+            m_root = root;
+        }
         assert(!contains(key));
     }
 };
