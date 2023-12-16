@@ -18,7 +18,7 @@ protected:
     using key_type = typename OrderedSet::key_type;
     using size_type = typename OrderedSet::size_type;
 
-    static constexpr size_type size = 256;
+    static constexpr size_type size = 1024;
 
 protected:
     OrderedSetTest() { }

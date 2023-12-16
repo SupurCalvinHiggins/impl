@@ -57,33 +57,24 @@ private:
     node_ptr m_root;
     size_type m_size;
 
-    bool contains(node_ptr root, key_type key) const {
+    size_type find_pivot(const node_ptr root, const key_type key) const {
+        assert(root != nullptr);
+        auto it = std::lower_bound(
+            root->keys.begin(), root->keys.begin() + root->size, key);
+        return std::distance(root->keys.begin(), it);
+    }
+
+    bool contains(const node_ptr root, const key_type key) const {
         if (root == nullptr) {
             return false;
         }
 
-        if (root->size == 1) {
-            if (key == root->keys[0]) {
-                return true;
-            }
-            if (key < root->keys[0]) {
-                return contains(root->children[0], key);
-            }
-            return contains(root->children[1], key);
+        const auto pivot = find_pivot(root, key);
+        if ((pivot < root->size) && (key == root->keys[pivot])) {
+            return true;
         }
 
-        else {
-            if (key == root->keys[0] || key == root->keys[1]) {
-                return true;
-            }
-            if (key < root->keys[0]) {
-                return contains(root->children[0], key);
-            }
-            if (key < root->keys[1]) {
-                return contains(root->children[1], key);
-            }
-            return contains(root->children[2], key);
-        }
+        return contains(root->children[pivot], key);
     }
 
     node_ptr rotate_left(node_ptr root, size_type pivot) const {
@@ -334,8 +325,9 @@ private:
             ++m_size;
             return new node_value({key, 0}, {nullptr, nullptr, nullptr}, 1);
         }
-        
-        if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
+
+        auto pivot = find_pivot(root, key);
+        if ((pivot < root->size) && (key == root->keys[pivot])) {
             return root;
         }
 
@@ -350,29 +342,11 @@ private:
                 }
                 assert(root->ok());
                 return root;
-            } else {
-                auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 3);
-                size_type pivot = -1;
-                if (key < root->keys[0]) {
-                    pivot = 0;
-                } else if ((root->size == 1) || (key < root->keys[1])) {
-                    pivot = 1;
-                } else {
-                    pivot = 2;
-                }
-                root->children[pivot] = node;
-                // assert(root->ok());
-                return split(root, pivot);
             }
-        }
 
-        size_type pivot = -1;
-        if (key < root->keys[0]) {
-            pivot = 0;
-        } else if ((root->size == 1) || (key < root->keys[1])) {
-            pivot = 1;
-        } else {
-            pivot = 2;
+            auto node = new node_value({key, 0}, {nullptr, nullptr, nullptr}, 3);
+            root->children[pivot] = node;
+            return split(root, pivot);
         }
 
         root->children[pivot] = insert(root->children[pivot], key);
@@ -404,8 +378,9 @@ private:
             return nullptr;
         }
 
-        size_type pivot = -1;
-        if (key == root->keys[0] || (root->size == 2 && key == root->keys[1])) {
+        auto pivot = find_pivot(root, key);
+
+        if ((pivot < root->size) && (key == root->keys[pivot])) {
             if (root->children[0] == nullptr) {
                 --m_size;
                 if (root->keys[0] == key) {
@@ -434,15 +409,6 @@ private:
             root->children[succ_idx] = remove(root->children[succ_idx], key);
             pivot = succ_idx;
             goto balance;
-        }
-
-        
-        if (key < root->keys[0]) {
-            pivot = 0;
-        } else if ((root->size == 1) || (key < root->keys[1])) {
-            pivot = 1;
-        } else {
-            pivot = 2;
         }
 
         root->children[pivot] = remove(root->children[pivot], key);
